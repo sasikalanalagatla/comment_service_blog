@@ -2,6 +2,7 @@ package com.mb.commentService.controller;
 
 import com.mb.commentService.dto.CommentDto;
 import com.mb.commentService.service.impl.CommentServiceImpl;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -10,14 +11,11 @@ import org.mockito.Spy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class CommentControllerTest {
 
@@ -28,122 +26,111 @@ class CommentControllerTest {
     @Spy
     private CommentController commentController;
 
-    public CommentControllerTest() {
+    private CommentDto validDto;
+    private CommentDto savedDto;
+    private List<CommentDto> commentList;
+
+    @BeforeEach
+    void setUp() {
         MockitoAnnotations.openMocks(this);
-    }
 
-    @Test
-    void createComment() {
-        CommentDto inputDto = new CommentDto();
-        inputDto.setName("John");
-        inputDto.setEmail("john@example.com");
-        inputDto.setComment("Hello!");
-        inputDto.setPostId(100L);
+        validDto = new CommentDto();
+        validDto.setId(null);
+        validDto.setName("John");
+        validDto.setEmail("john@example.com");
+        validDto.setComment("Hello!");
+        validDto.setPostId(100L);
 
-        CommentDto savedDto = new CommentDto();
+        savedDto = new CommentDto();
         savedDto.setId(1L);
         savedDto.setName("John");
         savedDto.setEmail("john@example.com");
         savedDto.setComment("Hello!");
         savedDto.setPostId(100L);
 
-        when(commentService.createComment(inputDto)).thenReturn(savedDto);
+        CommentDto c1 = new CommentDto();
+        c1.setId(1L);
+        c1.setComment("Hi");
+        c1.setPostId(100L);
 
-        ResponseEntity<CommentDto> response = commentController.createComment(inputDto);
+        CommentDto c2 = new CommentDto();
+        c2.setId(2L);
+        c2.setComment("Hello");
+        c2.setPostId(100L);
+
+        CommentDto c3 = new CommentDto();
+        c3.setId(3L);
+        c3.setComment("Hey");
+        c3.setPostId(100L);
+
+        commentList = Arrays.asList(c1, c2, c3);
+    }
+
+    @Test
+    void createComment() {
+        when(commentService.createComment(validDto)).thenReturn(savedDto);
+
+        ResponseEntity<CommentDto> response = commentController.createComment(validDto);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(1L, response.getBody().getId());
 
-        verify(commentService, times(1)).createComment(inputDto);
+        verify(commentService, times(1)).createComment(validDto);
     }
 
     @Test
     void getCommentById() {
-        Long commentId = 1L;
-        CommentDto commentDto = new CommentDto();
-        commentDto.setId(commentId);
-        commentDto.setComment("hi");
+        when(commentService.getCommentById(1L)).thenReturn(savedDto);
 
-        when(commentService.getCommentById(commentId)).thenReturn(commentDto);
+        ResponseEntity<CommentDto> response = commentController.getCommentById(1L);
 
-        ResponseEntity<CommentDto> response = commentController.getCommentById(commentId);
-
-        assertEquals(HttpStatus.OK,response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
+        assertEquals(1L, response.getBody().getId());
 
-        verify(commentService, times(1)).getCommentById(commentId);
+        verify(commentService, times(1)).getCommentById(1L);
     }
 
     @Test
     void getCommentsByPostId() {
-        Long postId = 1L;
-        CommentDto comment1 = new CommentDto();
-        comment1.setComment("Hi");
-        comment1.setPostId(postId);
-        comment1.setId(1L);
-        CommentDto comment2 = new CommentDto();
-        comment1.setComment("Hi");
-        comment1.setPostId(postId);
-        comment1.setId(2L);
-        CommentDto comment3 = new CommentDto();
-        comment1.setComment("Hi");
-        comment1.setPostId(postId);
-        comment1.setId(3L);
+        when(commentService.getCommentsByPostId(100L)).thenReturn(commentList);
 
-        List<CommentDto> commentDtos = Arrays.asList(comment1,comment2,comment3);
+        ResponseEntity<List<CommentDto>> response = commentController.getCommentsByPostId(100L);
 
-        when(commentService.getCommentsByPostId(postId)).thenReturn(commentDtos);
-
-        ResponseEntity<List<CommentDto>> response = commentController.getCommentsByPostId(postId);
-        assertEquals(HttpStatus.OK,response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
+        assertEquals(3, response.getBody().size());
 
-        verify(commentService, times(1)).getCommentsByPostId(postId);
+        verify(commentService, times(1)).getCommentsByPostId(100L);
     }
 
     @Test
     void updateComment() {
-        Long commentId = 1L;
-        CommentDto comment = new CommentDto();
-        comment.setComment("Hi");
-        comment.setPostId(1L);
-        comment.setId(commentId);
+        when(commentService.updateComment(1L, savedDto)).thenReturn(savedDto);
 
-        when(commentService.updateComment(commentId,comment)).thenReturn(comment);
+        ResponseEntity<CommentDto> response = commentController.updateComment(1L, savedDto);
 
-        ResponseEntity<CommentDto> response = commentController.updateComment(commentId,comment);
-        assertEquals(HttpStatus.OK,response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
+        assertEquals("Hello!", response.getBody().getComment());
 
-        verify(commentService, times(1)).updateComment(commentId,comment);
+        verify(commentService, times(1)).updateComment(1L, savedDto);
     }
 
     @Test
     void deleteComment() {
-        Long commentId = 1L;
+        ResponseEntity<Void> response = commentController.deleteComment(1L);
 
-        commentService.deleteComment(commentId);
-
-        ResponseEntity<Void> response = commentController.deleteComment(commentId);
-        assertEquals(HttpStatus.NO_CONTENT,response.getStatusCode());
-
-        verify(commentService, times(2)).deleteComment(commentId);
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        verify(commentService, times(1)).deleteComment(1L);
     }
 
     @Test
     void deleteCommentsByPostId() {
-        Long postId = 1L;
-        CommentDto comment = new CommentDto();
-        comment.setComment("Hi");
-        comment.setPostId(postId);
-        comment.setId(1L);
+        ResponseEntity<Void> response = commentController.deleteCommentsByPostId(100L);
 
-        commentService.deleteCommentsByPostId(postId);
-
-        ResponseEntity<Void> response = commentController.deleteCommentsByPostId(postId);
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-
-        verify(commentService, times(2)).deleteCommentsByPostId(postId);
+        verify(commentService, times(1)).deleteCommentsByPostId(100L);
     }
 }

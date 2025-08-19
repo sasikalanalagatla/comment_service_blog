@@ -27,30 +27,33 @@ class CommentServiceImplTest {
     @Spy
     private CommentServiceImpl commentService;
 
+    private CommentDto validDto;
+    private Comment validComment;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-    }
 
+        validDto = new CommentDto();
+        validDto.setId(1L);
+        validDto.setName("John");
+        validDto.setEmail("john@example.com");
+        validDto.setComment("Hello!");
+        validDto.setPostId(10L);
+
+        validComment = new Comment();
+        validComment.setId(1L);
+        validComment.setName("John");
+        validComment.setEmail("john@example.com");
+        validComment.setComment("Hello!");
+        validComment.setPostId(10L);
+    }
 
     @Test
     void createComment_success() {
-        CommentDto dto = new CommentDto();
-        dto.setName("John");
-        dto.setEmail("john@example.com");
-        dto.setComment("Hello!");
-        dto.setPostId(10L);
+        when(commentRepository.save(any(Comment.class))).thenReturn(validComment);
 
-        Comment savedEntity = new Comment();
-        savedEntity.setId(1L);
-        savedEntity.setName(dto.getName());
-        savedEntity.setEmail(dto.getEmail());
-        savedEntity.setComment(dto.getComment());
-        savedEntity.setPostId(dto.getPostId());
-
-        when(commentRepository.save(any(Comment.class))).thenReturn(savedEntity);
-
-        CommentDto result = commentService.createComment(dto);
+        CommentDto result = commentService.createComment(validDto);
 
         assertNotNull(result);
         assertEquals(1L, result.getId());
@@ -61,14 +64,11 @@ class CommentServiceImplTest {
 
     @Test
     void createComment_missingName_throwsException() {
-        CommentDto dto = new CommentDto();
-        dto.setEmail("john@example.com");
-        dto.setComment("Hello!");
-        dto.setPostId(10L);
+        validDto.setName(null);
 
         InvalidCommentDataException ex = assertThrows(
                 InvalidCommentDataException.class,
-                () -> commentService.createComment(dto)
+                () -> commentService.createComment(validDto)
         );
 
         assertEquals("Name is required", ex.getMessage());
@@ -77,14 +77,11 @@ class CommentServiceImplTest {
 
     @Test
     void createComment_missingEmail_throwsException() {
-        CommentDto dto = new CommentDto();
-        dto.setName("John");
-        dto.setComment("Hello!");
-        dto.setPostId(10L);
+        validDto.setEmail(null);
 
         InvalidCommentDataException ex = assertThrows(
                 InvalidCommentDataException.class,
-                () -> commentService.createComment(dto)
+                () -> commentService.createComment(validDto)
         );
 
         assertEquals("Email is required", ex.getMessage());
@@ -93,14 +90,11 @@ class CommentServiceImplTest {
 
     @Test
     void createComment_missingComment_throwsException() {
-        CommentDto dto = new CommentDto();
-        dto.setName("John");
-        dto.setEmail("john@example.com");
-        dto.setPostId(10L);
+        validDto.setComment(null);
 
         InvalidCommentDataException ex = assertThrows(
                 InvalidCommentDataException.class,
-                () -> commentService.createComment(dto)
+                () -> commentService.createComment(validDto)
         );
 
         assertEquals("Comment is required", ex.getMessage());
@@ -109,14 +103,11 @@ class CommentServiceImplTest {
 
     @Test
     void createComment_missingPostId_throwsException() {
-        CommentDto dto = new CommentDto();
-        dto.setName("John");
-        dto.setEmail("john@example.com");
-        dto.setComment("Hello!");
+        validDto.setPostId(null);
 
         InvalidCommentDataException ex = assertThrows(
                 InvalidCommentDataException.class,
-                () -> commentService.createComment(dto)
+                () -> commentService.createComment(validDto)
         );
 
         assertEquals("Post ID is required", ex.getMessage());
@@ -124,132 +115,84 @@ class CommentServiceImplTest {
     }
 
     @Test
-    void getCommentById() {
-        Long commentId = 1L;
-        CommentDto dto = new CommentDto();
-        dto.setName("John");
-        dto.setEmail("john@example.com");
-        dto.setComment("Hello!");
-        dto.setPostId(10L);
+    void getCommentById_success() {
+        when(commentRepository.findById(1L)).thenReturn(Optional.of(validComment));
 
-        Comment comment = new Comment();
-        comment.setId(commentId);
-        comment.setName(dto.getName());
-        comment.setEmail(dto.getEmail());
-        comment.setComment(dto.getComment());
-        comment.setPostId(dto.getPostId());
+        CommentDto result = commentService.getCommentById(1L);
 
-        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
-        CommentDto result = commentService.getCommentById(commentId);
         assertNotNull(result);
         assertEquals(1L, result.getId());
 
-        verify(commentService, times(1)).getCommentById(commentId);
+        verify(commentService, times(1)).getCommentById(1L);
     }
 
     @Test
     void getCommentById_commentNotFound() {
-        Long commentId = 1L;
-        CommentDto dto = new CommentDto();
-        dto.setEmail("john@example.com");
-        dto.setComment("Hello!");
-        dto.setId(10L);
-        dto.setPostId(10L);
+        when(commentRepository.findById(1L)).thenReturn(Optional.empty());
 
         CommentNotFoundException ex = assertThrows(
-                CommentNotFoundException.class, ()-> commentService.getCommentById(commentId)
+                CommentNotFoundException.class,
+                () -> commentService.getCommentById(1L)
         );
 
-        assertEquals("Comment not found with id: "+commentId, ex.getMessage());
+        assertEquals("Comment not found with id: 1", ex.getMessage());
         verify(commentRepository, never()).save(any());
     }
 
     @Test
-    void getCommentsByPostId() {
-        Long postId = 1L;
+    void getCommentsByPostId_success() {
+        when(commentRepository.findByPostIdOrderByCreatedAtDesc(10L))
+                .thenReturn(List.of(validComment));
 
-        Comment comment = new Comment();
-        comment.setPostId(postId);
-        comment.setEmail("email@gmail.com");
-        comment.setId(1L);
-        comment.setName("name");
-        comment.setComment("hi");
-        List<Comment> mockComments = List.of(comment);
+        List<CommentDto> result = commentService.getCommentsByPostId(10L);
 
-        when(commentRepository.findByPostIdOrderByCreatedAtDesc(postId)).thenReturn(mockComments);
-        List<CommentDto> result = commentService.getCommentsByPostId(postId);
         assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(10L, result.get(0).getPostId());
 
-        verify(commentService, times(1)).getCommentsByPostId(postId);
+        verify(commentService, times(1)).getCommentsByPostId(10L);
     }
 
     @Test
     void getCommentsByPostId_commentNotFound() {
-        Long postId = 1L;
-
-        Comment comment = new Comment();
-        comment.setPostId(2L);
-        comment.setEmail("email@gmail.com");
-        comment.setId(1L);
-        comment.setName("name");
-        comment.setComment("hi");
+        when(commentRepository.findByPostIdOrderByCreatedAtDesc(99L))
+                .thenReturn(List.of());
 
         CommentNotFoundException ex = assertThrows(
-                CommentNotFoundException.class, ()-> commentService.getCommentsByPostId(postId)
+                CommentNotFoundException.class,
+                () -> commentService.getCommentsByPostId(99L)
         );
 
-        assertEquals("No comments found for postId: "+postId, ex.getMessage());
+        assertEquals("No comments found for postId: 99", ex.getMessage());
         verify(commentRepository, never()).save(any());
     }
 
     @Test
-    void updateComment() {
-        Long commentId = 1L;
-        CommentDto dto = new CommentDto();
-        dto.setEmail("john@example.com");
-        dto.setName("name");
-        dto.setComment("Hello!");
-        dto.setId(commentId);
-        dto.setPostId(2L);
+    void updateComment_success() {
+        when(commentRepository.findById(1L)).thenReturn(Optional.of(validComment));
+        when(commentRepository.save(validComment)).thenReturn(validComment);
 
-        Comment comment = new Comment();
-        comment.setPostId(2L);
-        comment.setEmail("email@gmail.com");
-        comment.setId(commentId);
-        comment.setName("name");
-        comment.setComment("hi");
+        CommentDto result = commentService.updateComment(1L, validDto);
 
-        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
-        when(commentRepository.save(comment)).thenReturn(comment);
-        CommentDto result = commentService.updateComment(commentId,dto);
         assertNotNull(result);
+        assertEquals("Hello!", result.getComment());
 
-        verify(commentService, times(1)).updateComment(commentId, dto);
-
+        verify(commentService, times(1)).updateComment(1L, validDto);
     }
 
     @Test
-    void deleteComment() {
-        Long commentId = 1L;
-        Comment comment = new Comment();
-        comment.setPostId(2L);
-        comment.setEmail("email@gmail.com");
-        comment.setId(commentId);
-        comment.setName("name");
-        comment.setComment("hi");
+    void deleteComment_success() {
+        when(commentRepository.existsById(1L)).thenReturn(true);
 
-        when(commentRepository.existsById(commentId)).thenReturn(true);
-        commentRepository.deleteById(commentId);
+        commentService.deleteComment(1L);
 
-        verify(commentRepository, times(1)).deleteById(commentId);
-
+        verify(commentRepository, times(1)).deleteById(1L);
     }
 
     @Test
-    void deleteCommentsByPostId() {
-        Long postId = 1L;
+    void deleteCommentsByPostId_success() {
+        commentService.deleteCommentsByPostId(10L);
 
-        commentService.deleteCommentsByPostId(postId);
-        verify(commentService, times(1)).deleteCommentsByPostId(postId);
+        verify(commentService, times(1)).deleteCommentsByPostId(10L);
     }
 }
