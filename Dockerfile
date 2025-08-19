@@ -1,21 +1,33 @@
-FROM eclipse-temurin:21-jdk as builder
+# ---------- BUILD STAGE ----------
+FROM eclipse-temurin:21-jdk AS builder
 WORKDIR /app
 
-# Copy pom.xml
+# Copy Maven wrapper and pom.xml
+COPY mvnw .
+COPY .mvn .mvn
 COPY pom.xml ./
 
-# Download dependencies (requires Maven installed)
-RUN mvn dependency:go-offline
+# Give execute permission to Maven wrapper
+RUN chmod +x mvnw
+
+# Download dependencies (offline)
+RUN ./mvnw dependency:go-offline
 
 # Copy source code
 COPY src ./src
 
-# Build project
-RUN mvn clean package -DskipTests
+# Build the project and skip tests
+RUN ./mvnw clean package -DskipTests
 
-# Runtime image
+# ---------- RUNTIME STAGE ----------
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY --from=builder /app/target/commentService-0.0.1-SNAPSHOT.jar ./app.jar
 
+# Copy the built jar from builder stage
+COPY --from=builder /app/target/*.jar ./app.jar
+
+# Expose the port that matches application.properties
+EXPOSE 8081
+
+# Run the application
 ENTRYPOINT ["java", "-Xmx256m", "-jar", "app.jar"]
