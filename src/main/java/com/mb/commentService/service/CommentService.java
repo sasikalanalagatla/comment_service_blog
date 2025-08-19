@@ -18,6 +18,4 @@ public interface CommentService {
     CommentDto updateComment(Long id, CommentDto commentDto);
     
     void deleteComment(Long id);
-
-
 }

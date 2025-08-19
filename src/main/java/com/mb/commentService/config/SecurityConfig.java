@@ -17,7 +17,7 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/comments/**").permitAll() // Allow public read access to comments
+                .requestMatchers("/api/comments/**").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
