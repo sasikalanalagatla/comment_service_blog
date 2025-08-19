@@ -1,26 +1,24 @@
 FROM eclipse-temurin:21-jdk as builder
 WORKDIR /app
 
-# Copy Maven wrapper and config
+# Copy Maven wrapper only (optional)
 COPY mvnw .
-COPY .mvn/ .mvn
 
 # Copy pom.xml
 COPY pom.xml ./
 
-# Download dependencies
-RUN ./mvnw dependency:go-offline
+# Download dependencies (requires Maven installed)
+RUN mvn dependency:go-offline
 
 # Copy source code
 COPY src ./src
 
 # Build project
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests
 
 # Runtime image
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=builder /app/target/commentService-0.0.1-SNAPSHOT.jar ./app.jar
 
-# Limit max heap size
 ENTRYPOINT ["java", "-Xmx256m", "-jar", "app.jar"]
