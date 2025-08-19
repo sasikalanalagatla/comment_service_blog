@@ -154,16 +154,14 @@ class CommentServiceImplTest {
     }
 
     @Test
-    void getCommentsByPostId_commentNotFound() {
+    void getCommentsByPostId_noComments_returnsEmptyList() {
         when(commentRepository.findByPostIdOrderByCreatedAtDesc(99L))
                 .thenReturn(List.of());
 
-        CommentNotFoundException ex = assertThrows(
-                CommentNotFoundException.class,
-                () -> commentService.getCommentsByPostId(99L)
-        );
+        List<CommentDto> comments = commentService.getCommentsByPostId(99L);
 
-        assertEquals("No comments found for postId: 99", ex.getMessage());
+        assertNotNull(comments);
+        assertTrue(comments.isEmpty());
         verify(commentRepository, never()).save(any());
     }
 

@@ -68,17 +68,13 @@ public class CommentServiceImpl implements CommentService {
     public List<CommentDto> getCommentsByPostId(Long postId) {
         log.info("Fetching comments for postId: {}", postId);
         List<Comment> comments = commentRepository.findByPostIdOrderByCreatedAtDesc(postId);
-        if (comments.isEmpty()) {
-            log.warn("No comments found for postId: {}", postId);
-            throw new CommentNotFoundException("No comments found for postId: " + postId);
-        }
 
         List<CommentDto> commentDtos = new ArrayList<>();
         for (Comment comment : comments) {
             commentDtos.add(convertToDto(comment));
         }
 
-        log.debug("Fetched {} comments for postId: {}", comments.size(), postId);
+        log.debug("Fetched {} comments for postId: {}", commentDtos.size(), postId);
         return commentDtos;
     }
 
