@@ -7,10 +7,10 @@ import com.mb.commentService.model.Comment;
 import com.mb.commentService.repository.CommentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,13 +18,13 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class CommentServiceImplTest {
 
     @Mock
     private CommentRepository commentRepository;
 
     @InjectMocks
-    @Spy
     private CommentServiceImpl commentService;
 
     private CommentDto validDto;
@@ -32,8 +32,6 @@ class CommentServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-
         validDto = new CommentDto();
         validDto.setId(1L);
         validDto.setName("John");
@@ -123,7 +121,7 @@ class CommentServiceImplTest {
         assertNotNull(result);
         assertEquals(1L, result.getId());
 
-        verify(commentService, times(1)).getCommentById(1L);
+        verify(commentRepository, times(1)).findById(1L);
     }
 
     @Test
@@ -150,7 +148,7 @@ class CommentServiceImplTest {
         assertEquals(1, result.size());
         assertEquals(10L, result.get(0).getPostId());
 
-        verify(commentService, times(1)).getCommentsByPostId(10L);
+        verify(commentRepository, times(1)).findByPostIdOrderByCreatedAtDesc(10L);
     }
 
     @Test
@@ -175,7 +173,7 @@ class CommentServiceImplTest {
         assertNotNull(result);
         assertEquals("Hello!", result.getComment());
 
-        verify(commentService, times(1)).updateComment(1L, validDto);
+        verify(commentRepository, times(1)).findById(1L);
     }
 
     @Test
@@ -191,6 +189,6 @@ class CommentServiceImplTest {
     void deleteCommentsByPostId_success() {
         commentService.deleteCommentsByPostId(10L);
 
-        verify(commentService, times(1)).deleteCommentsByPostId(10L);
+        verify(commentRepository, times(1)).deleteByPostId(10L);
     }
 }
